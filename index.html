@@ -1,2 +1,95 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Interactive Wordcloud</title></head><body></body></html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Interactive term-cloud layout editor for cognitive clusters." />
+    <title>Interactive Term Cloud Lab</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232a6f97'/%3E%3Cellipse cx='32' cy='32' rx='22' ry='15' fill='none' stroke='white' stroke-width='4'/%3E%3Ccircle cx='22' cy='31' r='3' fill='%23ef7d00'/%3E%3Ccircle cx='34' cy='25' r='3' fill='%23dc4a86'/%3E%3Ccircle cx='43' cy='35' r='3' fill='%232a9da4'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">NEURAL PLEIOTROPY · FIGURE TOOL</p>
+          <h1>Interactive term cloud</h1>
+          <p class="lede">输入 term 和权重，直接拖动布局，并导出可用于图稿的 PNG 或 JSON。</p>
+        </div>
+        <div class="top-actions">
+          <button id="loadDemo" class="button button-secondary">加载 Cluster 1 示例</button>
+          <button id="exportPng" class="button button-primary">导出 PNG</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="controls" aria-label="Term cloud controls">
+          <section class="control-section">
+            <div class="section-heading">
+              <h2>输入数据</h2>
+              <span class="hint">JSON / TSV / TXT</span>
+            </div>
+            <textarea id="dataInput" spellcheck="false" aria-label="Term data input"></textarea>
+            <div class="inline-actions">
+              <button id="applyData" class="button button-primary button-small">应用数据</button>
+              <label class="file-button button button-secondary button-small">
+                导入文件
+                <input id="dataFile" type="file" accept=".txt,.tsv,.csv,.json" />
+              </label>
+            </div>
+            <p class="microcopy">每行可写 <code>term&nbsp;&nbsp;&nbsp;weight</code>，也支持 JSON：<code>[{"word":"attention","weight":0.8}]</code>。</p>
+          </section>
+
+          <section class="control-section">
+            <div class="section-heading"><h2>布局与 mask</h2><span class="hint">可手动拖拽</span></div>
+            <div class="field-grid">
+              <label>形状<select id="shape"><option value="ellipse">椭圆</option><option value="circle">圆形</option><option value="rounded">圆角矩形</option><option value="hexagon">六边形</option><option value="custom">自定义 mask</option></select></label>
+              <label>底色<input id="background" type="color" value="#ebeff3" /></label>
+              <label>边缘色<input id="edgeColor" type="color" value="#c4cad2" /></label>
+              <label class="file-button">上传 mask<input id="maskFile" type="file" accept="image/png,image/svg+xml,image/webp" /></label>
+            </div>
+            <p class="microcopy">自定义 mask 建议使用带透明通道的 PNG 或 SVG。选择形状后，可以直接拖动 term 到合适位置。</p>
+          </section>
+
+          <section class="control-section">
+            <div class="section-heading"><h2>视觉参数</h2><span class="hint">字号由权重控制</span></div>
+            <label class="range-row"><span>基础字号 <output id="baseFontValue">29</output></span><input id="baseFont" type="range" min="18" max="48" value="29" /></label>
+            <label class="range-row"><span>字号波动 <output id="variationValue">13</output></span><input id="variation" type="range" min="0" max="24" value="13" /></label>
+            <label class="range-row"><span>底板透明度 <output id="opacityValue">92%</output></span><input id="opacity" type="range" min="45" max="100" value="92" /></label>
+            <label class="checkbox-row"><input id="showLabels" type="checkbox" checked /> 显示 term</label>
+          </section>
+
+          <section class="control-section compact-section">
+            <div class="section-heading"><h2>当前选择</h2><span id="selectionStatus" class="hint">未选择</span></div>
+            <div id="selectedEditor" class="selected-editor is-disabled">
+              <label>term<input id="selectedWord" type="text" disabled /></label>
+              <label>颜色<input id="selectedColor" type="color" disabled /></label>
+              <label>权重<input id="selectedWeight" type="number" min="0" max="1" step="0.01" disabled /></label>
+            </div>
+          </section>
+
+          <section class="control-section action-section">
+            <button id="addTerm" class="button button-secondary button-full">添加 term</button>
+            <button id="saveLayout" class="button button-secondary button-full">保存布局 JSON</button>
+            <p class="microcopy">拖动 term 后保存 JSON，之后可以重新载入并继续调整。</p>
+          </section>
+        </aside>
+
+        <section class="canvas-area" aria-label="Interactive canvas">
+          <div class="canvas-toolbar">
+            <div><span class="status-dot"></span><span id="canvasStatus">可编辑布局</span></div>
+            <div class="toolbar-hint">点击选择 · 拖动移动 · Delete 删除</div>
+          </div>
+          <div class="canvas-frame">
+            <canvas id="cloudCanvas" width="1080" height="680" aria-label="Interactive term cloud canvas"></canvas>
+          </div>
+          <div class="canvas-footer">
+            <span id="termCount">0 terms</span>
+            <span>权重越高，字号越大</span>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

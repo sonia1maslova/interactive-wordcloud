@@ -204,5 +204,3 @@ document.getElementById('resetDefault').addEventListener('click',()=>{localStora
 const savedDefaults = localStorage.getItem(defaultKey);
 if (savedDefaults) { try { applySettings(JSON.parse(savedDefaults), true); } catch (_) { state.terms=[]; updateSelected(); render(); } }
 else { state.terms=[]; input.value=''; updateSelected(); render(); }
-
-The focused UI element is 1 AXWebArea interactive-wordcloud/app.js at main · sonia1maslova/interactive-wordcloud, URL: github.com/sonia1maslova/interactive-wordcloud/blob/main/app.j

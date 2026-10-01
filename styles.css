@@ -21,6 +21,7 @@ button { cursor: pointer; }
 h1 { margin: 0; font-size: clamp(30px, 4vw, 50px); letter-spacing: -.04em; line-height: 1; }
 .lede { margin: 12px 0 0; color: var(--muted); font-size: 15px; }
 .top-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.top-note { color: var(--muted); font-size: 12px; padding: 10px 0; }
 .workspace { display: grid; grid-template-columns: 350px minmax(0, 1fr); gap: 22px; align-items: start; }
 .controls, .canvas-area { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
 .controls { overflow: hidden; }
@@ -46,6 +47,9 @@ code { color: #315f7a; background: #eaf2f7; padding: 1px 4px; border-radius: 4px
 label { display: flex; flex-direction: column; gap: 6px; color: #526477; font-size: 11px; font-weight: 650; }
 select, input[type="number"], input[type="text"] { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; color: var(--ink); background: #fbfcfd; font-size: 12px; }
 input[type="color"] { width: 100%; height: 37px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: white; }
+.color-alpha { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 10px; font-weight: 600; margin-top: 2px; }
+.color-alpha output { font-size: 10px; }
+.field-grid input[type="range"], .selected-editor input[type="range"] { width: 100%; margin: 0; }
 .range-row { margin-top: 13px; }
 .range-row span { display: flex; justify-content: space-between; }
 output { color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -55,6 +59,9 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .selected-editor label:last-child { grid-column: 1 / -1; }
 .is-disabled { opacity: .5; }
 .action-section { background: #fbfcfd; }
+.export-heading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 11px; }
+.export-actions, .default-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.export-actions .button, .default-actions .button { padding-left: 8px; padding-right: 8px; }
 .canvas-area { padding: 18px; min-width: 0; }
 .canvas-toolbar, .canvas-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; color: var(--muted); font-size: 12px; }
 .canvas-toolbar { margin: 0 3px 13px; }

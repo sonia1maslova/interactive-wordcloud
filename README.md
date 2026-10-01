@@ -1,21 +1,24 @@
-# Interactive Term Cloud Lab
+# Interactive Word Cloud Lab
 
-一个无需构建步骤的静态网页工具，用于编辑认知 term cloud 的布局。
+一个无需构建步骤的静态网页工具，用于编辑 word cloud 的布局。
+
+在线使用：[https://sonia1maslova.github.io/interactive-wordcloud/](https://sonia1maslova.github.io/interactive-wordcloud/)
 
 ## 功能
 
-- 粘贴或上传 JSON、TSV、CSV、TXT 格式的 term 数据
+- 粘贴或上传 JSON、TSV、CSV、TXT 格式的 word 数据
 - 以权重/effect size 控制字号
 - 椭圆、圆形、圆角矩形和六边形 mask
 - 上传透明 PNG/SVG 作为自定义 mask
-- 通过拖拽手动调整每个 term 的位置
-- 调整底色、边缘色、透明度、基础字号和字号波动
-- 保存布局 JSON，导出 PNG
-- 保存的布局 JSON 可以再次导入，并恢复形状、颜色、字号和 term 位置
+- 通过拖拽手动调整每个 word 的位置
+- 分别调整底色、边缘色、word 颜色的透明度，以及基础字号和字号波动
+- 在同一个“导出”区域保存布局 JSON 或导出 PNG。文件名可以手动输入；留空时自动使用当前日期和时间
+- 可以将当前布局和视觉参数保存为浏览器默认设置，也可以恢复内置默认设置
+- 保存的布局 JSON 可以再次导入，并恢复形状、颜色、透明度、字号和 word 位置
 
 ## 输入格式
 
-TSV 示例：
+TSV 格式：
 
 ```text
 word	weight
@@ -24,7 +27,7 @@ fear	0.9
 emotion	0.88
 ```
 
-JSON 示例：
+JSON 格式：
 
 ```json
 [

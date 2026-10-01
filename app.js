@@ -2,21 +2,10 @@ const canvas = document.getElementById('cloudCanvas');
 const ctx = canvas.getContext('2d');
 const input = document.getElementById('dataInput');
 const state = {
-  shape: 'ellipse', background: '#ebeff3', edgeColor: '#c4cad2', opacity: 0.92,
-  baseFont: 29, variation: 13, showLabels: true, terms: [], selected: -1,
+  shape: 'ellipse', background: '#ebeff3', backgroundAlpha: 0.92, edgeColor: '#c4cad2', edgeAlpha: 0.82, opacity: 0.92,
+  wordAlpha: 1, baseFont: 29, variation: 13, showLabels: true, terms: [], selected: -1,
   dragging: false, customMask: null, dragOffset: { x: 0, y: 0 },
 };
-
-const demoTerms = [
-  { word: 'anxiety', weight: 1.00, color: '#2a6f97', x: .29, y: .27 },
-  { word: 'fear', weight: .90, color: '#4c9a62', x: .57, y: .23 },
-  { word: 'emotion', weight: .89, color: '#ef7d00', x: .78, y: .31 },
-  { word: 'valence', weight: .78, color: '#dc4a86', x: .22, y: .46 },
-  { word: 'arousal', weight: .76, color: '#6e59b8', x: .50, y: .43 },
-  { word: 'emotion regulation', weight: .72, color: '#2a9e9e', x: .32, y: .64 },
-  { word: 'extinction', weight: .35, color: '#b05ab2', x: .68, y: .60 },
-  { word: 'facial expression', weight: .20, color: '#a56b1e', x: .53, y: .77 },
-];
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function hexToRgb(hex) { const n = hex.replace('#', ''); return [parseInt(n.slice(0,2),16), parseInt(n.slice(2,4),16), parseInt(n.slice(4,6),16)]; }
@@ -31,6 +20,7 @@ function normaliseTerms(terms) {
     return {
       word, weight: Number.isFinite(weight) ? weight : 0,
       norm: max === min ? 1 : (weight - min) / (max - min),
+      alpha: Number.isFinite(Number(t.alpha)) ? Number(t.alpha) : 1,
       color: t.color || ['#2a6f97','#4c9a62','#ef7d00','#dc4a86','#7161b5','#2a9da4','#b05cab','#a56b1e'][i % 8],
       x: Number.isFinite(Number(t.x)) ? Number(t.x) : .2 + (i % 4) * .2,
       y: Number.isFinite(Number(t.y)) ? Number(t.y) : .25 + Math.floor(i / 4) * .25,
@@ -47,13 +37,14 @@ function parseTerms(raw) {
     return normaliseTerms(arr);
   } catch (_) {}
   const rows = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  const header = rows[0].toLowerCase().split(/[\t,]/);
+  const cleanCell = value => value.trim().replace(/^"(.*)"$/, '$1').replace(/""/g, '"');
+  const header = rows[0].toLowerCase().split(/[\t,]/).map(cleanCell);
   const hasHeader = header.includes('word') || header.includes('term');
   const start = hasHeader ? 1 : 0;
   const wordIdx = hasHeader ? Math.max(header.indexOf('word'), header.indexOf('term')) : 0;
   const weightIdx = hasHeader ? ['weight','value','importance','effect_size','size'].map(k => header.indexOf(k)).find(i => i >= 0) ?? 1 : 1;
   return normaliseTerms(rows.slice(start).map(row => {
-    const cells = row.split(/[\t,]/).map(x => x.trim());
+    const cells = row.split(/[\t,]/).map(cleanCell);
     return { word: cells[wordIdx], weight: Number(cells[weightIdx]) || 0 };
   }));
 }
@@ -67,7 +58,10 @@ function applyInputText(raw) {
       if (parsed.shape) { state.shape = parsed.shape; document.getElementById('shape').value = parsed.shape; }
       if (parsed.background) { state.background = parsed.background; document.getElementById('background').value = parsed.background; }
       if (parsed.edgeColor) { state.edgeColor = parsed.edgeColor; document.getElementById('edgeColor').value = parsed.edgeColor; }
+      if (Number.isFinite(Number(parsed.backgroundAlpha))) { state.backgroundAlpha = Number(parsed.backgroundAlpha); document.getElementById('backgroundAlpha').value = Math.round(state.backgroundAlpha * 100); document.getElementById('backgroundAlphaValue').textContent = `${Math.round(state.backgroundAlpha * 100)}%`; }
+      if (Number.isFinite(Number(parsed.edgeAlpha))) { state.edgeAlpha = Number(parsed.edgeAlpha); document.getElementById('edgeAlpha').value = Math.round(state.edgeAlpha * 100); document.getElementById('edgeAlphaValue').textContent = `${Math.round(state.edgeAlpha * 100)}%`; }
       if (Number.isFinite(Number(parsed.opacity))) { state.opacity = Number(parsed.opacity); document.getElementById('opacity').value = Math.round(state.opacity * 100); document.getElementById('opacityValue').textContent = `${Math.round(state.opacity * 100)}%`; }
+      if (Number.isFinite(Number(parsed.wordAlpha))) { state.wordAlpha = Number(parsed.wordAlpha); document.getElementById('wordAlpha').value = Math.round(state.wordAlpha * 100); document.getElementById('wordAlphaValue').textContent = `${Math.round(state.wordAlpha * 100)}%`; }
       if (Number.isFinite(Number(parsed.baseFont))) { state.baseFont = Number(parsed.baseFont); document.getElementById('baseFont').value = state.baseFont; document.getElementById('baseFontValue').textContent = state.baseFont; }
       if (Number.isFinite(Number(parsed.variation))) { state.variation = Number(parsed.variation); document.getElementById('variation').value = state.variation; document.getElementById('variationValue').textContent = state.variation; }
       state.terms = normaliseTerms(parsed.terms);
@@ -87,7 +81,7 @@ function applyInputText(raw) {
   return true;
 }
 
-function serialiseTerms() { return JSON.stringify(state.terms.map(t => ({ word: t.word, weight: t.weight, color: t.color, x: +t.x.toFixed(4), y: +t.y.toFixed(4) })), null, 2); }
+function serialiseTerms() { return JSON.stringify(state.terms.map(t => ({ word: t.word, weight: t.weight, color: t.color, alpha: t.alpha ?? 1, x: +t.x.toFixed(4), y: +t.y.toFixed(4) })), null, 2); }
 function termSize(term) { return state.baseFont + state.variation * term.norm; }
 function shapePath(targetCtx = ctx) {
   const pad = 28, w = canvas.width - pad * 2, h = canvas.height - pad * 2, cx = canvas.width / 2, cy = canvas.height / 2;
@@ -108,11 +102,11 @@ function drawPanel() {
     const geo = shapePath(); ctx.save(); ctx.clip();
     const [r,g,b] = hexToRgb(state.background);
     const gradient = ctx.createRadialGradient(geo.cx, geo.cy, 10, geo.cx, geo.cy, Math.max(geo.w, geo.h) * .62);
-    gradient.addColorStop(0, `rgba(${r},${g},${b},${state.opacity})`);
-    gradient.addColorStop(.72, `rgba(${r},${g},${b},${state.opacity * .88})`);
+    gradient.addColorStop(0, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity})`);
+    gradient.addColorStop(.72, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity * .88})`);
     gradient.addColorStop(1, 'rgba(255,255,255,0.10)');
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
-    ctx.save(); ctx.strokeStyle = state.edgeColor; ctx.lineWidth = 3; ctx.globalAlpha = .82; shapePath(); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.strokeStyle = state.edgeColor; ctx.lineWidth = 3; ctx.globalAlpha = state.edgeAlpha; shapePath(); ctx.stroke(); ctx.restore();
   }
 }
 
@@ -122,10 +116,10 @@ function drawTerms() {
     const x = term.x * canvas.width, y = term.y * canvas.height, size = termSize(term);
     ctx.save(); ctx.font = `${size}px Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (index === state.selected) { const m = ctx.measureText(term.word); ctx.fillStyle = 'rgba(255,255,255,.60)'; ctx.roundRect(x-m.width/2-12, y-size*.55, m.width+24, size*1.1, 12); ctx.fill(); ctx.strokeStyle = term.color; ctx.lineWidth = 2; ctx.stroke(); }
-    ctx.fillStyle = term.color; ctx.fillText(term.word, x, y); ctx.restore();
+    ctx.fillStyle = rgba(term.color, state.wordAlpha * (term.alpha ?? 1)); ctx.fillText(term.word, x, y); ctx.restore();
   });
 }
-function render() { drawPanel(); drawTerms(); document.getElementById('termCount').textContent = `${state.terms.length} terms`; }
+function render() { drawPanel(); drawTerms(); document.getElementById('wordCount').textContent = `${state.terms.length} words`; }
 
 function pointerPosition(event) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left) * canvas.width / rect.width, y: (event.clientY - rect.top) * canvas.height / rect.height }; }
 function hitTest(p) {
@@ -143,24 +137,54 @@ canvas.addEventListener('pointermove', e => { if(!state.dragging || state.select
 canvas.addEventListener('pointerup', e => { state.dragging=false; try{canvas.releasePointerCapture(e.pointerId);}catch(_){}; });
 window.addEventListener('keydown', e => { if(e.key==='Delete' && state.selected>=0){state.terms.splice(state.selected,1);state.selected=-1;updateSelected();render();} });
 
-function updateSelected() { const disabled=state.selected<0, box=document.getElementById('selectedEditor'); box.classList.toggle('is-disabled',disabled); ['selectedWord','selectedColor','selectedWeight'].forEach(id=>document.getElementById(id).disabled=disabled); if(disabled){document.getElementById('selectionStatus').textContent='未选择';return;} const t=state.terms[state.selected]; document.getElementById('selectionStatus').textContent=t.word; document.getElementById('selectedWord').value=t.word; document.getElementById('selectedColor').value=t.color; document.getElementById('selectedWeight').value=t.weight; }
+function updateSelected() {
+  const disabled = state.selected < 0;
+  const box = document.getElementById('selectedEditor');
+  box.classList.toggle('is-disabled', disabled);
+  ['selectedWord','selectedColor','selectedAlpha','selectedWeight'].forEach(id => { document.getElementById(id).disabled = disabled; });
+  if (disabled) { document.getElementById('selectionStatus').textContent = '未选择'; return; }
+  const t = state.terms[state.selected];
+  document.getElementById('selectionStatus').textContent = t.word;
+  document.getElementById('selectedWord').value = t.word;
+  document.getElementById('selectedColor').value = t.color;
+  document.getElementById('selectedAlpha').value = Math.round((t.alpha ?? 1) * 100);
+  document.getElementById('selectedAlphaValue').textContent = `${Math.round((t.alpha ?? 1) * 100)}%`;
+  document.getElementById('selectedWeight').value = t.weight;
+}
 document.getElementById('selectedColor').addEventListener('input',e=>{if(state.selected>=0){state.terms[state.selected].color=e.target.value;render();}});
+document.getElementById('selectedAlpha').addEventListener('input',e=>{if(state.selected>=0){state.terms[state.selected].alpha=+e.target.value/100;document.getElementById('selectedAlphaValue').textContent=`${e.target.value}%`;render();}});
 document.getElementById('selectedWord').addEventListener('input',e=>{if(state.selected>=0){state.terms[state.selected].word=e.target.value;document.getElementById('selectionStatus').textContent=e.target.value;render();}});
 document.getElementById('selectedWeight').addEventListener('input',e=>{if(state.selected>=0){state.terms[state.selected].weight=+e.target.value;const vals=state.terms.map(t=>t.weight),min=Math.min(...vals),max=Math.max(...vals);state.terms.forEach(t=>t.norm=max===min?1:(t.weight-min)/(max-min));render();}});
 
-function bind(id, key, format=(v)=>v) { const el=document.getElementById(id), out=document.getElementById(`${id}Value`); el.addEventListener('input',e=>{state[key]=id==='opacity'?+e.target.value/100:+e.target.value;if(out)out.textContent=format(e.target.value);render();}); }
+function bind(id, key, format=(v)=>v) { const el=document.getElementById(id), out=document.getElementById(`${id}Value`); el.addEventListener('input',e=>{state[key]=['opacity','backgroundAlpha','edgeAlpha','wordAlpha'].includes(id)?+e.target.value/100:+e.target.value;if(out)out.textContent=format(e.target.value);render();}); }
 bind('baseFont','baseFont'); bind('variation','variation'); bind('opacity','opacity',v=>`${v}%`);
+bind('backgroundAlpha','backgroundAlpha',v=>`${v}%`); bind('edgeAlpha','edgeAlpha',v=>`${v}%`); bind('wordAlpha','wordAlpha',v=>`${v}%`);
 document.getElementById('shape').addEventListener('change',e=>{state.shape=e.target.value;render();});
 document.getElementById('background').addEventListener('input',e=>{state.background=e.target.value;render();});
 document.getElementById('edgeColor').addEventListener('input',e=>{state.edgeColor=e.target.value;render();});
 document.getElementById('showLabels').addEventListener('change',e=>{state.showLabels=e.target.checked;render();});
-document.getElementById('applyData').addEventListener('click',()=>{if(!applyInputText(input.value))alert('没有读到有效 term。');});
-document.getElementById('loadDemo').addEventListener('click',()=>{state.terms=normaliseTerms(JSON.parse(JSON.stringify(demoTerms)));input.value=serialiseTerms();state.selected=-1;updateSelected();render();});
-document.getElementById('dataFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{input.value=reader.result;if(!applyInputText(reader.result))alert('没有读到有效 term。');};reader.readAsText(file);});
+document.getElementById('applyData').addEventListener('click',()=>{if(!applyInputText(input.value))alert('没有读到有效 word。');});
+document.getElementById('dataFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{input.value=reader.result;if(!applyInputText(reader.result))alert('没有读到有效 word。');};reader.readAsText(file);});
 document.getElementById('maskFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{state.customMask=img;state.shape='custom';document.getElementById('shape').value='custom';render();};img.src=reader.result;};reader.readAsDataURL(file);});
-document.getElementById('addTerm').addEventListener('click',()=>{const i=state.terms.length;state.terms.push({word:`term ${i+1}`,weight:.5,norm:.5,color:'#2a6f97',x:.28+(i%3)*.22,y:.35+Math.floor(i/3)*.22});state.selected=i;updateSelected();render();});
-document.getElementById('saveLayout').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({version:1,shape:state.shape,background:state.background,edgeColor:state.edgeColor,opacity:state.opacity,baseFont:state.baseFont,variation:state.variation,terms:state.terms},null,2)],{type:'application/json'});download(blob,'term-cloud-layout.json');});
-document.getElementById('exportPng').addEventListener('click',()=>{const link=document.createElement('a');link.download='term-cloud.png';link.href=canvas.toDataURL('image/png');link.click();});
+function timestampName() { const d=new Date(), pad=n=>String(n).padStart(2,'0'); return `wordcloud_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+function outputBaseName() { const raw=document.getElementById('outputName').value.trim(); const safe=raw.replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_').replace(/^\.+/,'').slice(0,80); return safe || timestampName(); }
+function currentSettings() { return {shape:state.shape,background:state.background,backgroundAlpha:state.backgroundAlpha,edgeColor:state.edgeColor,edgeAlpha:state.edgeAlpha,opacity:state.opacity,wordAlpha:state.wordAlpha,baseFont:state.baseFont,variation:state.variation,showLabels:state.showLabels,terms:state.terms}; }
+document.getElementById('saveLayout').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({version:1,...currentSettings()},null,2)],{type:'application/json'});download(blob,`${outputBaseName()}.json`);});
+document.getElementById('exportPng').addEventListener('click',()=>{const link=document.createElement('a');link.download=`${outputBaseName()}.png`;link.href=canvas.toDataURL('image/png');link.click();});
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
-state.terms=normaliseTerms(JSON.parse(JSON.stringify(demoTerms))); input.value=serialiseTerms(); updateSelected(); render();
+const defaultKey = 'interactiveWordCloudDefaults';
+function applySettings(settings, includeWords=false) {
+  Object.assign(state, settings);
+  if (!includeWords) state.terms = [];
+  document.getElementById('shape').value=state.shape; document.getElementById('background').value=state.background; document.getElementById('edgeColor').value=state.edgeColor;
+  for (const id of ['baseFont','variation']) document.getElementById(id).value=state[id];
+  for (const id of ['opacity','backgroundAlpha','edgeAlpha','wordAlpha']) { document.getElementById(id).value=Math.round(state[id]*100); document.getElementById(`${id}Value`).textContent=`${Math.round(state[id]*100)}%`; }
+  document.getElementById('showLabels').checked=state.showLabels; input.value=includeWords ? serialiseTerms() : ''; state.selected=-1; updateSelected(); render();
+}
+document.getElementById('setDefault').addEventListener('click',()=>{localStorage.setItem(defaultKey,JSON.stringify(currentSettings()));document.getElementById('defaultStatus').textContent='已将当前布局和视觉参数设为默认。';});
+document.getElementById('resetDefault').addEventListener('click',()=>{localStorage.removeItem(defaultKey);applySettings({shape:'ellipse',background:'#ebeff3',backgroundAlpha:.92,edgeColor:'#c4cad2',edgeAlpha:.82,opacity:.92,wordAlpha:1,baseFont:29,variation:13,showLabels:true},false);document.getElementById('defaultStatus').textContent='已恢复内置默认设置。';});
+
+const savedDefaults = localStorage.getItem(defaultKey);
+if (savedDefaults) { try { applySettings(JSON.parse(savedDefaults), true); } catch (_) { state.terms=[]; updateSelected(); render(); } }
+else { state.terms=[]; input.value=''; updateSelected(); render(); }

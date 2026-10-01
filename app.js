@@ -113,7 +113,7 @@ function drawPanel() {
       const gradient = ctx.createRadialGradient(geo.cx, geo.cy, 10, geo.cx, geo.cy, Math.max(geo.w, geo.h) * .62);
       gradient.addColorStop(0, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity})`);
       gradient.addColorStop(.72, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity * .88})`);
-      gradient.addColorStop(1, 'rgba(255,255,255,0.10)');
+      gradient.addColorStop(1, `rgba(255,255,255,${state.backgroundAlpha * state.opacity * .10})`);
       ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
     }
     if (!state.transparentEdge) {

@@ -43,8 +43,8 @@
             <div class="section-heading"><h2>布局与形状（mask）</h2><span class="hint">可手动拖拽</span></div>
             <div class="field-grid">
               <label>形状（mask）<select id="shape"><option value="ellipse">椭圆</option><option value="circle">圆形</option><option value="rounded">圆角矩形</option><option value="hexagon">六边形</option><option value="custom">自定义（上传图片）</option></select></label>
-              <label>形状填充色<input id="background" type="color" value="#ebeff3" /><span class="color-alpha"><span>透明度</span><output id="backgroundAlphaValue">92%</output></span><input id="backgroundAlpha" type="range" min="0" max="100" value="92" /></label>
-              <label>边缘色<input id="edgeColor" type="color" value="#c4cad2" /><span class="color-alpha"><span>透明度</span><output id="edgeAlphaValue">82%</output></span><input id="edgeAlpha" type="range" min="0" max="100" value="82" /></label>
+              <label>形状填充色<input id="background" type="color" value="#ebeff3" /><span class="color-alpha"><span>不透明度</span><output id="backgroundAlphaValue">92%</output></span><input id="backgroundAlpha" type="range" min="0" max="100" value="92" /></label>
+              <label>边缘色<input id="edgeColor" type="color" value="#c4cad2" /><span class="color-alpha"><span>不透明度</span><output id="edgeAlphaValue">82%</output></span><input id="edgeAlpha" type="range" min="0" max="100" value="82" /></label>
               <label class="file-button">上传自定义形状<input id="maskFile" type="file" accept="image/png,image/svg+xml,image/webp" /></label>
             </div>
             <div class="transparency-options" aria-label="透明选项">
@@ -59,8 +59,9 @@
             <div class="section-heading"><h2>视觉参数</h2><span class="hint">字号由权重控制</span></div>
             <label class="range-row"><span>基础字号 <output id="baseFontValue">29</output></span><input id="baseFont" type="range" min="18" max="48" value="29" /></label>
             <label class="range-row"><span>字号波动 <output id="variationValue">13</output></span><input id="variation" type="range" min="0" max="24" value="13" /></label>
-            <label class="range-row"><span>形状整体透明度 <output id="opacityValue">92%</output></span><input id="opacity" type="range" min="45" max="100" value="92" /></label>
-            <label class="range-row"><span>word 透明度 <output id="wordAlphaValue">100%</output></span><input id="wordAlpha" type="range" min="0" max="100" value="100" /></label>
+            <label class="range-row"><span>形状整体不透明度 <output id="opacityValue">92%</output></span><input id="opacity" type="range" min="0" max="100" value="92" /></label>
+            <label class="range-row"><span>word 不透明度 <output id="wordAlphaValue">100%</output></span><input id="wordAlpha" type="range" min="0" max="100" value="100" /></label>
+            <p class="microcopy">不透明度越高越不透明。形状填充的不透明度由填充色与整体设置相乘，边缘单独控制。内置形状保留边缘渐变。</p>
             <label class="checkbox-row"><input id="showLabels" type="checkbox" checked /> 显示 word</label>
           </section>
 
@@ -68,7 +69,7 @@
             <div class="section-heading"><h2>当前选择</h2><span id="selectionStatus" class="hint">未选择</span></div>
             <div id="selectedEditor" class="selected-editor is-disabled">
               <label>word<input id="selectedWord" type="text" disabled /></label>
-              <label>颜色<input id="selectedColor" type="color" disabled /><span class="color-alpha"><span>透明度</span><output id="selectedAlphaValue">100%</output></span><input id="selectedAlpha" type="range" min="0" max="100" value="100" disabled /></label>
+              <label>颜色<input id="selectedColor" type="color" disabled /><span class="color-alpha"><span>不透明度</span><output id="selectedAlphaValue">100%</output></span><input id="selectedAlpha" type="range" min="0" max="100" value="100" disabled /></label>
               <label>权重<input id="selectedWeight" type="number" min="0" max="1" step="0.01" disabled /></label>
             </div>
           </section>

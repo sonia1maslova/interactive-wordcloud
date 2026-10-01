@@ -47,7 +47,12 @@
               <label>边缘色<input id="edgeColor" type="color" value="#c4cad2" /><span class="color-alpha"><span>透明度</span><output id="edgeAlphaValue">82%</output></span><input id="edgeAlpha" type="range" min="0" max="100" value="82" /></label>
               <label class="file-button">上传 mask<input id="maskFile" type="file" accept="image/png,image/svg+xml,image/webp" /></label>
             </div>
-            <p class="microcopy">自定义 mask 建议使用带透明通道的 PNG 或 SVG。选择形状后，可以直接拖动 word 到合适位置。</p>
+            <div class="transparency-options" aria-label="透明选项">
+              <label class="toggle-label"><input id="transparentBackground" type="checkbox" /> 底板透明</label>
+              <label class="toggle-label"><input id="transparentEdge" type="checkbox" /> 边缘透明</label>
+              <label class="toggle-label"><input id="transparentMask" type="checkbox" /> mask 透明</label>
+            </div>
+            <p class="microcopy">透明选项会保留在导出的 PNG 和布局 JSON 中。启用“mask 透明”时，仅隐藏自定义 mask 的可视底图。</p>
           </section>
 
           <section class="control-section">

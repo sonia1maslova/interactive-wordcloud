@@ -104,10 +104,10 @@ function drawPanel() {
   }
   if (state.shape === 'custom' && state.customMask) {
     if (!state.transparentMask) {
-      ctx.save(); ctx.globalAlpha = state.opacity; ctx.drawImage(state.customMask, 28, 28, canvas.width-56, canvas.height-56); ctx.restore();
+      ctx.save(); ctx.globalAlpha = state.backgroundAlpha * state.opacity; ctx.drawImage(state.customMask, 28, 28, canvas.width-56, canvas.height-56); ctx.restore();
     }
   } else {
-    if (!state.transparentBackground) {
+    if (!state.transparentMask) {
       const geo = shapePath(); ctx.save(); ctx.clip();
       const [r,g,b] = hexToRgb(state.background);
       const gradient = ctx.createRadialGradient(geo.cx, geo.cy, 10, geo.cx, geo.cy, Math.max(geo.w, geo.h) * .62);
@@ -193,9 +193,9 @@ function applySettings(settings, includeWords=false) {
   Object.assign(state, settings);
   if (!includeWords) state.terms = [];
   document.getElementById('shape').value=state.shape; document.getElementById('background').value=state.background; document.getElementById('edgeColor').value=state.edgeColor;
+  for (const id of ['transparentBackground','transparentEdge','transparentMask']) document.getElementById(id).checked=Boolean(state[id]);
   for (const id of ['baseFont','variation']) document.getElementById(id).value=state[id];
   for (const id of ['opacity','backgroundAlpha','edgeAlpha','wordAlpha']) { document.getElementById(id).value=Math.round(state[id]*100); document.getElementById(`${id}Value`).textContent=`${Math.round(state[id]*100)}%`; }
-  for (const id of ['transparentBackground','transparentEdge','transparentMask']) document.getElementById(id).checked=Boolean(state[id]);
   document.getElementById('showLabels').checked=state.showLabels; input.value=includeWords ? serialiseTerms() : ''; state.selected=-1; updateSelected(); render();
 }
 document.getElementById('setDefault').addEventListener('click',()=>{localStorage.setItem(defaultKey,JSON.stringify(currentSettings()));document.getElementById('defaultStatus').textContent='已将当前布局和视觉参数设为默认。';});

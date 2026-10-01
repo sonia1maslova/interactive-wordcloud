@@ -50,6 +50,9 @@ input[type="color"] { width: 100%; height: 37px; padding: 3px; border: 1px solid
 .color-alpha { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 10px; font-weight: 600; margin-top: 2px; }
 .color-alpha output { font-size: 10px; }
 .field-grid input[type="range"], .selected-editor input[type="range"] { width: 100%; margin: 0; }
+.transparency-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.toggle-label { flex-direction: row; align-items: center; gap: 6px; padding: 8px 7px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfd; color: #526477; font-size: 10px; font-weight: 650; }
+.toggle-label input { margin: 0; accent-color: var(--accent); }
 .range-row { margin-top: 13px; }
 .range-row span { display: flex; justify-content: space-between; }
 output { color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -67,7 +70,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .canvas-toolbar { margin: 0 3px 13px; }
 .toolbar-hint { font-size: 11px; }
 .status-dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #4c9a62; box-shadow: 0 0 0 4px rgba(76,154,98,.12); }
-.canvas-frame { overflow: auto; border-radius: 18px; background: #f7fafc; border: 1px solid #e4eaf0; padding: 10px; }
+.canvas-frame { overflow: auto; border-radius: 18px; background-color: #f7fafc; background-image: linear-gradient(45deg, rgba(148,163,184,.10) 25%, transparent 25%), linear-gradient(-45deg, rgba(148,163,184,.10) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(148,163,184,.10) 75%), linear-gradient(-45deg, transparent 75%, rgba(148,163,184,.10) 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; border: 1px solid #e4eaf0; padding: 10px; }
 canvas { display: block; width: 100%; height: auto; max-height: 72vh; border-radius: 12px; }
 .canvas-footer { padding: 12px 3px 0; }
 @media (max-width: 980px) { .workspace { grid-template-columns: 1fr; } .controls { order: 2; } .canvas-area { order: 1; } .topbar { align-items: flex-start; flex-direction: column; } }

@@ -28,7 +28,7 @@
               <h2>输入数据</h2>
               <span class="hint">JSON / TSV / TXT</span>
             </div>
-            <textarea id="dataInput" spellcheck="false" aria-label="Word data input" placeholder="word\tweight\nanxiety\t1.0\nfear\t0.9"></textarea>
+            <textarea id="dataInput" spellcheck="false" aria-label="Word data input" placeholder="word\tweight"></textarea>
             <div class="inline-actions">
               <button id="applyData" class="button button-primary button-small">应用数据</button>
               <label class="file-button button button-secondary button-small">
@@ -36,7 +36,7 @@
                 <input id="dataFile" type="file" accept=".txt,.tsv,.csv,.json" />
               </label>
             </div>
-            <p class="microcopy">每行可写 <code>word&nbsp;&nbsp;&nbsp;weight</code>，也支持 JSON：<code>[{"word":"attention","weight":0.8}]</code>。</p>
+            <p class="microcopy">每行可写 <code>word&nbsp;&nbsp;&nbsp;weight</code>，也支持 JSON 数组格式。</p>
           </section>
 
           <section class="control-section">

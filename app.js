@@ -3,6 +3,7 @@ const ctx = canvas.getContext('2d');
 const input = document.getElementById('dataInput');
 const state = {
   shape: 'ellipse', background: '#ebeff3', backgroundAlpha: 0.92, edgeColor: '#c4cad2', edgeAlpha: 0.82, opacity: 0.92,
+  transparentBackground: false, transparentEdge: false, transparentMask: false,
   wordAlpha: 1, baseFont: 29, variation: 13, showLabels: true, terms: [], selected: -1,
   dragging: false, customMask: null, dragOffset: { x: 0, y: 0 },
 };
@@ -64,6 +65,9 @@ function applyInputText(raw) {
       if (Number.isFinite(Number(parsed.wordAlpha))) { state.wordAlpha = Number(parsed.wordAlpha); document.getElementById('wordAlpha').value = Math.round(state.wordAlpha * 100); document.getElementById('wordAlphaValue').textContent = `${Math.round(state.wordAlpha * 100)}%`; }
       if (Number.isFinite(Number(parsed.baseFont))) { state.baseFont = Number(parsed.baseFont); document.getElementById('baseFont').value = state.baseFont; document.getElementById('baseFontValue').textContent = state.baseFont; }
       if (Number.isFinite(Number(parsed.variation))) { state.variation = Number(parsed.variation); document.getElementById('variation').value = state.variation; document.getElementById('variationValue').textContent = state.variation; }
+      for (const key of ['transparentBackground','transparentEdge','transparentMask']) {
+        if (typeof parsed[key] === 'boolean') { state[key] = parsed[key]; document.getElementById(key).checked = parsed[key]; }
+      }
       state.terms = normaliseTerms(parsed.terms);
     } else {
       const terms = parseTerms(text);
@@ -95,18 +99,26 @@ function shapePath(targetCtx = ctx) {
 
 function drawPanel() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!state.transparentBackground) {
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
   if (state.shape === 'custom' && state.customMask) {
-    ctx.save(); ctx.globalAlpha = state.opacity; ctx.drawImage(state.customMask, 28, 28, canvas.width-56, canvas.height-56); ctx.restore();
+    if (!state.transparentMask) {
+      ctx.save(); ctx.globalAlpha = state.opacity; ctx.drawImage(state.customMask, 28, 28, canvas.width-56, canvas.height-56); ctx.restore();
+    }
   } else {
-    const geo = shapePath(); ctx.save(); ctx.clip();
-    const [r,g,b] = hexToRgb(state.background);
-    const gradient = ctx.createRadialGradient(geo.cx, geo.cy, 10, geo.cx, geo.cy, Math.max(geo.w, geo.h) * .62);
-    gradient.addColorStop(0, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity})`);
-    gradient.addColorStop(.72, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity * .88})`);
-    gradient.addColorStop(1, 'rgba(255,255,255,0.10)');
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
-    ctx.save(); ctx.strokeStyle = state.edgeColor; ctx.lineWidth = 3; ctx.globalAlpha = state.edgeAlpha; shapePath(); ctx.stroke(); ctx.restore();
+    if (!state.transparentBackground) {
+      const geo = shapePath(); ctx.save(); ctx.clip();
+      const [r,g,b] = hexToRgb(state.background);
+      const gradient = ctx.createRadialGradient(geo.cx, geo.cy, 10, geo.cx, geo.cy, Math.max(geo.w, geo.h) * .62);
+      gradient.addColorStop(0, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity})`);
+      gradient.addColorStop(.72, `rgba(${r},${g},${b},${state.backgroundAlpha * state.opacity * .88})`);
+      gradient.addColorStop(1, 'rgba(255,255,255,0.10)');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
+    }
+    if (!state.transparentEdge) {
+      ctx.save(); ctx.strokeStyle = state.edgeColor; ctx.lineWidth = 3; ctx.globalAlpha = state.edgeAlpha; shapePath(); ctx.stroke(); ctx.restore();
+    }
   }
 }
 
@@ -163,12 +175,15 @@ document.getElementById('shape').addEventListener('change',e=>{state.shape=e.tar
 document.getElementById('background').addEventListener('input',e=>{state.background=e.target.value;render();});
 document.getElementById('edgeColor').addEventListener('input',e=>{state.edgeColor=e.target.value;render();});
 document.getElementById('showLabels').addEventListener('change',e=>{state.showLabels=e.target.checked;render();});
+for (const key of ['transparentBackground','transparentEdge','transparentMask']) {
+  document.getElementById(key).addEventListener('change', e => { state[key] = e.target.checked; render(); });
+}
 document.getElementById('applyData').addEventListener('click',()=>{if(!applyInputText(input.value))alert('没有读到有效 word。');});
 document.getElementById('dataFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{input.value=reader.result;if(!applyInputText(reader.result))alert('没有读到有效 word。');};reader.readAsText(file);});
 document.getElementById('maskFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{state.customMask=img;state.shape='custom';document.getElementById('shape').value='custom';render();};img.src=reader.result;};reader.readAsDataURL(file);});
 function timestampName() { const d=new Date(), pad=n=>String(n).padStart(2,'0'); return `wordcloud_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
 function outputBaseName() { const raw=document.getElementById('outputName').value.trim(); const safe=raw.replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_').replace(/^\.+/,'').slice(0,80); return safe || timestampName(); }
-function currentSettings() { return {shape:state.shape,background:state.background,backgroundAlpha:state.backgroundAlpha,edgeColor:state.edgeColor,edgeAlpha:state.edgeAlpha,opacity:state.opacity,wordAlpha:state.wordAlpha,baseFont:state.baseFont,variation:state.variation,showLabels:state.showLabels,terms:state.terms}; }
+function currentSettings() { return {shape:state.shape,background:state.background,backgroundAlpha:state.backgroundAlpha,edgeColor:state.edgeColor,edgeAlpha:state.edgeAlpha,opacity:state.opacity,transparentBackground:state.transparentBackground,transparentEdge:state.transparentEdge,transparentMask:state.transparentMask,wordAlpha:state.wordAlpha,baseFont:state.baseFont,variation:state.variation,showLabels:state.showLabels,terms:state.terms}; }
 document.getElementById('saveLayout').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({version:1,...currentSettings()},null,2)],{type:'application/json'});download(blob,`${outputBaseName()}.json`);});
 document.getElementById('exportPng').addEventListener('click',()=>{const link=document.createElement('a');link.download=`${outputBaseName()}.png`;link.href=canvas.toDataURL('image/png');link.click();});
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
@@ -180,11 +195,14 @@ function applySettings(settings, includeWords=false) {
   document.getElementById('shape').value=state.shape; document.getElementById('background').value=state.background; document.getElementById('edgeColor').value=state.edgeColor;
   for (const id of ['baseFont','variation']) document.getElementById(id).value=state[id];
   for (const id of ['opacity','backgroundAlpha','edgeAlpha','wordAlpha']) { document.getElementById(id).value=Math.round(state[id]*100); document.getElementById(`${id}Value`).textContent=`${Math.round(state[id]*100)}%`; }
+  for (const id of ['transparentBackground','transparentEdge','transparentMask']) document.getElementById(id).checked=Boolean(state[id]);
   document.getElementById('showLabels').checked=state.showLabels; input.value=includeWords ? serialiseTerms() : ''; state.selected=-1; updateSelected(); render();
 }
 document.getElementById('setDefault').addEventListener('click',()=>{localStorage.setItem(defaultKey,JSON.stringify(currentSettings()));document.getElementById('defaultStatus').textContent='已将当前布局和视觉参数设为默认。';});
-document.getElementById('resetDefault').addEventListener('click',()=>{localStorage.removeItem(defaultKey);applySettings({shape:'ellipse',background:'#ebeff3',backgroundAlpha:.92,edgeColor:'#c4cad2',edgeAlpha:.82,opacity:.92,wordAlpha:1,baseFont:29,variation:13,showLabels:true},false);document.getElementById('defaultStatus').textContent='已恢复内置默认设置。';});
+document.getElementById('resetDefault').addEventListener('click',()=>{localStorage.removeItem(defaultKey);applySettings({shape:'ellipse',background:'#ebeff3',backgroundAlpha:.92,edgeColor:'#c4cad2',edgeAlpha:.82,opacity:.92,transparentBackground:false,transparentEdge:false,transparentMask:false,wordAlpha:1,baseFont:29,variation:13,showLabels:true},false);document.getElementById('defaultStatus').textContent='已恢复内置默认设置。';});
 
 const savedDefaults = localStorage.getItem(defaultKey);
 if (savedDefaults) { try { applySettings(JSON.parse(savedDefaults), true); } catch (_) { state.terms=[]; updateSelected(); render(); } }
 else { state.terms=[]; input.value=''; updateSelected(); render(); }
+
+The focused UI element is 1 AXWebArea interactive-wordcloud/app.js at main · sonia1maslova/interactive-wordcloud, URL: github.com/sonia1maslova/interactive-wordcloud/blob/main/app.j

@@ -184,8 +184,90 @@ document.getElementById('maskFile').addEventListener('change',e=>{const file=e.t
 function timestampName() { const d=new Date(), pad=n=>String(n).padStart(2,'0'); return `wordcloud_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
 function outputBaseName() { const raw=document.getElementById('outputName').value.trim(); const safe=raw.replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_').replace(/^\.+/,'').slice(0,80); return safe || timestampName(); }
 function currentSettings() { return {shape:state.shape,background:state.background,backgroundAlpha:state.backgroundAlpha,edgeColor:state.edgeColor,edgeAlpha:state.edgeAlpha,opacity:state.opacity,transparentBackground:state.transparentBackground,transparentEdge:state.transparentEdge,transparentMask:state.transparentMask,wordAlpha:state.wordAlpha,baseFont:state.baseFont,variation:state.variation,showLabels:state.showLabels,terms:state.terms}; }
-document.getElementById('saveLayout').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({version:1,...currentSettings()},null,2)],{type:'application/json'});download(blob,`${outputBaseName()}.json`);});
-document.getElementById('exportPng').addEventListener('click',()=>{const link=document.createElement('a');link.download=`${outputBaseName()}.png`;link.href=canvas.toDataURL('image/png');link.click();});
+let saveDirectoryHandle = null;
+let exportInProgress = false;
+const directoryPickerSupported = window.isSecureContext && typeof window.showDirectoryPicker === 'function';
+function setSaveStatus(message) { document.getElementById('saveLocationStatus').textContent = message; }
+function updateSaveControls() {
+  document.getElementById('chooseSaveFolder').disabled = !directoryPickerSupported || exportInProgress;
+  document.getElementById('useDefaultDownload').disabled = !saveDirectoryHandle || exportInProgress;
+  document.getElementById('saveLayout').disabled = exportInProgress;
+  document.getElementById('exportPng').disabled = exportInProgress;
+}
+async function chooseSaveFolder() {
+  if (!directoryPickerSupported) return;
+  try {
+    const directory = await window.showDirectoryPicker({id: 'wordcloud-export', mode: 'readwrite'});
+    saveDirectoryHandle = directory;
+    setSaveStatus(`当前文件夹：${directory.name}。PNG 和布局 JSON 都将保存到这里。`);
+    updateSaveControls();
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    setSaveStatus('无法选择文件夹。请重试，或使用浏览器默认下载。');
+  }
+}
+document.getElementById('chooseSaveFolder').addEventListener('click', chooseSaveFolder);
+document.getElementById('useDefaultDownload').addEventListener('click', () => {
+  saveDirectoryHandle = null;
+  setSaveStatus('当前：浏览器默认下载位置。');
+  updateSaveControls();
+});
+if (!directoryPickerSupported) {
+  document.getElementById('saveLocationHelp').textContent = '当前浏览器不支持网页选择保存文件夹，将使用普通下载。可在支持此功能的 Chrome 或 Edge 中打开本工具，或在浏览器设置中开启下载前询问保存位置。';
+}
+updateSaveControls();
+
+async function availableExportName(directory, name) {
+  const dot = name.lastIndexOf('.'), stem = name.slice(0, dot), extension = name.slice(dot);
+  for (let count = 1; count <= 1000; count++) {
+    const candidate = count === 1 ? name : `${stem}_${count}${extension}`;
+    try { await directory.getFileHandle(candidate); }
+    catch (error) { if (error.name === 'NotFoundError') return candidate; throw error; }
+  }
+  throw new Error('Too many files with the same name.');
+}
+async function saveExportFile(makeBlob, name) {
+  if (exportInProgress) return;
+  exportInProgress = true;
+  updateSaveControls();
+  const directory = saveDirectoryHandle;
+  try {
+    if (directory) {
+      const options = {mode: 'readwrite'};
+      let permission = await directory.queryPermission(options);
+      if (permission !== 'granted') permission = await directory.requestPermission(options);
+      if (permission !== 'granted') {
+        setSaveStatus('未获得保存权限。请重新选择文件夹，或切换到默认下载。');
+        return;
+      }
+    }
+    const blob = await makeBlob();
+    if (!blob) throw new Error('Export could not be generated.');
+    if (directory) {
+      const actualName = await availableExportName(directory, name);
+      const file = await directory.getFileHandle(actualName, {create: true});
+      const writable = await file.createWritable();
+      try { await writable.write(blob); await writable.close(); }
+      catch (error) { try { await writable.abort(); } catch (_) {} throw error; }
+      setSaveStatus(`已保存：${directory.name} / ${actualName}`);
+    } else {
+      download(blob, name);
+      setSaveStatus(`已交给浏览器下载：${name}`);
+    }
+  } catch (error) {
+    setSaveStatus(error.name === 'AbortError' ? '已取消保存。' : '保存失败。请检查文件夹权限并重试，或切换到默认下载。');
+  } finally {
+    exportInProgress = false;
+    updateSaveControls();
+  }
+}
+document.getElementById('saveLayout').addEventListener('click', () => {
+  const layout = JSON.stringify({version: 1, ...currentSettings()}, null, 2);
+  return saveExportFile(() => new Blob([layout], {type: 'application/json'}), `${outputBaseName()}.json`);
+});
+document.getElementById('exportPng').addEventListener('click', () => {
+  return saveExportFile(() => new Promise(resolve => canvas.toBlob(resolve, 'image/png')), `${outputBaseName()}.png`);
+});
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
 const defaultKey = 'interactiveWordCloudDefaults';
